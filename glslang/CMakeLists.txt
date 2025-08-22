@@ -182,8 +182,6 @@ glslang_add_build_info_dependency(glslang)
 
 glslang_pch(glslang MachineIndependent/pch.h)
 
-glslang_only_export_explicit_symbols(glslang)
-
 if(WIN32 AND BUILD_SHARED_LIBS)
     set_target_properties(glslang PROPERTIES PREFIX "")
 endif()
@@ -227,7 +225,6 @@ set_target_properties(glslang-default-resource-limits PROPERTIES
 target_include_directories(glslang-default-resource-limits PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..>
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
-glslang_only_export_explicit_symbols(glslang-default-resource-limits)
 
 ################################################################################
 # source_groups

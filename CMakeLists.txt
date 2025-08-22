@@ -33,13 +33,7 @@
 cmake_minimum_required(VERSION 3.22.1)
 project(glslang)
 
-set(GLSLANG_TESTS_DEFAULT ON) # Can be turned off, below, based on environment.
-set(GLSLANG_ENABLE_INSTALL_DEFAULT ON) # Can be turned off, below, based on environment.
-
-set_property(GLOBAL PROPERTY USE_FOLDERS ON) # Can be removed when min is 3.26 see policy CMP0143.
-
 # Adhere to GNU filesystem layout conventions
-include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
 
 # Needed for cmake_dependent_option macro
@@ -50,10 +44,6 @@ option(BUILD_WERROR "Enable warnings as errors (default is OFF)" OFF)
 
 set(LIB_TYPE STATIC)
 
-if(BUILD_SHARED_LIBS)
-    set(LIB_TYPE SHARED)
-endif()
-
 get_cmake_property(isMultiConfig "GENERATOR_IS_MULTI_CONFIG")
 if (NOT isMultiConfig AND NOT CMAKE_BUILD_TYPE)
     # This logic inside SPIRV-Tools, which can upset build target dependencies
@@ -63,51 +53,11 @@ if (NOT isMultiConfig AND NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Debug")
 endif()
 
-# Currently iOS and Android are very similar.
-# They both have their own packaging (APP/APK).
-# Which makes regular executables/testing problematic.
-#
-# Currently the only deliverables for these platforms are
-# libraries (either STATIC or SHARED).
-#
-# Furthermore testing is equally problematic.
-if (IOS OR ANDROID)
-    set(ENABLE_GLSLANG_BINARIES OFF)
-    set(GLSLANG_TESTS_DEFAULT OFF)
-endif()
-
-# Simplify the default case of including this project.
-# Otherwise add_subdirectory users have a harder time consuming the library.
-# Since glslang will pollute the installation and add undesirable testing.
-if(NOT PROJECT_IS_TOP_LEVEL)
-    set(GLSLANG_TESTS_DEFAULT OFF)
-    set(GLSLANG_ENABLE_INSTALL_DEFAULT OFF)
-endif()
-
-# Control whether Glslang self-tests are built and tested.
-# Always expose this as an option, so the defaults can be overridden.
-option(GLSLANG_TESTS "Enable glslang testing" ${GLSLANG_TESTS_DEFAULT})
-
-# Control whether to install Glslang.
-# Always expose this as an option, so the defaults can be overridden.
-option(GLSLANG_ENABLE_INSTALL "Enable glslang installation" ${GLSLANG_ENABLE_INSTALL_DEFAULT})
-
 option(ENABLE_SPIRV "Enables SPIRV output support" ON)
 option(ENABLE_SPVREMAPPER "Enables building of SPVRemapper" ON)
 
 option(ENABLE_GLSLANG_BINARIES "Builds glslang and spirv-remap" ON)
 
-option(ENABLE_GLSLANG_JS "If using Emscripten, build glslang.js. Otherwise, builds a sample executable for binary-size testing.")
-cmake_dependent_option(ENABLE_EMSCRIPTEN_SINGLE_FILE
-    "If using Emscripten, enables SINGLE_FILE build"
-    OFF "ENABLE_GLSLANG_JS AND EMSCRIPTEN"
-    OFF)
-cmake_dependent_option(ENABLE_EMSCRIPTEN_ENVIRONMENT_NODE
-    "If using Emscripten, builds to run on Node instead of Web"
-    OFF "ENABLE_GLSLANG_JS AND EMSCRIPTEN"
-    OFF)
-
-option(ENABLE_HLSL "Enables HLSL input support" ON)
 option(ENABLE_RTTI "Enables RTTI")
 option(ENABLE_EXCEPTIONS "Enables Exceptions")
 cmake_dependent_option(ENABLE_OPT "Enables spirv-opt capability if present" ON "ENABLE_SPIRV" OFF)
@@ -123,10 +73,6 @@ option(ENABLE_PCH "Enables Precompiled header" ON)
 
 if(ENABLE_SPIRV)
     add_compile_definitions(ENABLE_SPIRV)
-endif()
-
-if(ENABLE_HLSL)
-    add_compile_definitions(ENABLE_HLSL)
 endif()
 
 if(WIN32)
@@ -249,21 +195,6 @@ function(glslang_add_build_info_dependency target)
     target_include_directories(${target} PUBLIC $<BUILD_INTERFACE:${GLSLANG_GENERATED_INCLUDEDIR}>)
 endfunction()
 
-# glslang_only_export_explicit_symbols() makes the symbol visibility hidden by
-# default for <target> when building shared libraries, and sets the
-# GLSLANG_IS_SHARED_LIBRARY define, and GLSLANG_EXPORTING to 1 when specifically
-# building <target>.
-function(glslang_only_export_explicit_symbols target)
-    if(BUILD_SHARED_LIBS)
-        target_compile_definitions(${target} PUBLIC "GLSLANG_IS_SHARED_LIBRARY=1")
-        set_target_properties(${target} PROPERTIES CXX_VISIBILITY_PRESET hidden)
-        set_target_properties(${target} PROPERTIES C_VISIBILITY_PRESET hidden)
-        if(WIN32)
-            target_compile_definitions(${target} PRIVATE "GLSLANG_EXPORTING=1")
-        endif()
-    endif()
-endfunction()
-
 # glslang_pch() adds precompiled header rules to <target> for the pre-compiled
 # header file <pch>. As target_precompile_headers() was added in CMake 3.16,
 # this is a no-op if called on earlier versions of CMake.
@@ -273,38 +204,10 @@ function(glslang_pch target pch)
     endif()
 endfunction()
 
-if(BUILD_EXTERNAL AND IS_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/External)
-    # We depend on these for later projects, so they should come first.
-    add_subdirectory(External)
-endif()
-
-option(ALLOW_EXTERNAL_SPIRV_TOOLS "Allows to build against installed SPIRV-Tools-opt. This is unsupported if the commit isn't the one in known_good.json")
-if(NOT TARGET SPIRV-Tools-opt)
-    if(ALLOW_EXTERNAL_SPIRV_TOOLS)
-        # Look for external SPIR-V Tools build, if not building in-tree
-        message(STATUS "Trying to find local SPIR-V tools")
-        find_package(SPIRV-Tools-opt)
-        if(NOT TARGET SPIRV-Tools-opt)
-            if(ENABLE_OPT)
-                message(SEND_ERROR "ENABLE_OPT set but SPIR-V tools not found! Disabling SPIR-V optimization.")
-            endif()
-            set(ENABLE_OPT OFF)
-        endif()
-    else()
-        if(ENABLE_OPT)
-            message(SEND_ERROR "ENABLE_OPT set but SPIR-V tools not found. Please run update_glslang_sources.py, "
-                "set the ALLOW_EXTERNAL_SPIRV_TOOLS option to use a local install of SPIRV-Tools, or set ENABLE_OPT=0.")
-        endif()
-    endif()
-endif()
-
 if(ENABLE_OPT)
     message(STATUS "optimizer enabled")
     add_compile_definitions(ENABLE_OPT=1)
 else()
-    if(ENABLE_HLSL)
-        message(STATUS "spirv-tools not linked - illegal SPIRV may be generated for HLSL")
-    endif()
     add_compile_definitions(ENABLE_OPT=0)
 endif()
 
@@ -312,89 +215,4 @@ if(ENABLE_SPIRV)
     add_subdirectory(SPIRV)
 endif()
 add_subdirectory(glslang)
-if(ENABLE_GLSLANG_BINARIES)
-    add_subdirectory(StandAlone)
-endif()
 
-if(GLSLANG_TESTS)
-    enable_testing()
-    add_subdirectory(gtests)
-
-    # glslang-testsuite runs a bash script on Windows.
-    # Make sure to use '-o igncr' flag to ignore carriage returns (\r).
-    set(IGNORE_CR_FLAG "")
-    if(WIN32)
-        set(IGNORE_CR_FLAG -o igncr)
-    endif()
-
-    if (isMultiConfig)
-        set(RESULTS_PATH ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/localResults)
-        set(VALIDATOR_PATH ${CMAKE_CURRENT_BINARY_DIR}/StandAlone/$<CONFIG>/glslang)
-        set(REMAP_PATH ${CMAKE_CURRENT_BINARY_DIR}/StandAlone/$<CONFIG>/spirv-remap)
-    else()
-        set(RESULTS_PATH ${CMAKE_CURRENT_BINARY_DIR}/localResults)
-        set(VALIDATOR_PATH ${CMAKE_CURRENT_BINARY_DIR}/StandAlone/glslang)
-        set(REMAP_PATH ${CMAKE_CURRENT_BINARY_DIR}/StandAlone/spirv-remap)
-    endif()
-
-    # The TARGET_RUNTIME_DLL_DIRS feature requires CMake 3.27 or greater.
-    if(WIN32 AND BUILD_SHARED_LIBS AND CMAKE_VERSION VERSION_LESS "3.27")
-        message(WARNING "The Windows shared library test configuration requires CMake 3.27 or greater")
-    else()
-        add_test(NAME glslang-testsuite
-            COMMAND bash ${IGNORE_CR_FLAG} runtests ${RESULTS_PATH} ${VALIDATOR_PATH} ${REMAP_PATH}
-            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/Test/)
-
-        # Prepend paths to shared libraries.
-        if (BUILD_SHARED_LIBS)
-            set_tests_properties(glslang-testsuite PROPERTIES ENVIRONMENT_MODIFICATION "PATH=path_list_prepend:$<JOIN:$<TARGET_RUNTIME_DLL_DIRS:glslang-standalone>,\;>")
-            set_tests_properties(glslang-testsuite PROPERTIES ENVIRONMENT_MODIFICATION "PATH=path_list_prepend:$<JOIN:$<TARGET_RUNTIME_DLL_DIRS:spirv-remap>,\;>")
-        endif()
-    endif()
-endif()
-
-if (GLSLANG_ENABLE_INSTALL)
-    file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/glslang-config.cmake.in" [=[
-        @PACKAGE_INIT@
-        include(CMakeFindDependencyMacro)
-        if(@ENABLE_OPT@)
-            find_dependency(SPIRV-Tools-opt)
-        endif()
-        @INSTALL_CONFIG_UNIX@
-        include("@PACKAGE_PATH_EXPORT_TARGETS@")
-    ]=])
-
-    set(PATH_EXPORT_TARGETS "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}/glslang-targets.cmake")
-    if(UNIX OR "${CMAKE_SYSTEM_NAME}" STREQUAL "Fuchsia")
-        set(INSTALL_CONFIG_UNIX [=[
-            set(THREADS_PREFER_PTHREAD_FLAG ON)
-            find_dependency(Threads)
-        ]=])
-    endif()
-    configure_package_config_file(
-        "${CMAKE_CURRENT_BINARY_DIR}/glslang-config.cmake.in"
-        "${CMAKE_CURRENT_BINARY_DIR}/glslang-config.cmake"
-        PATH_VARS
-            PATH_EXPORT_TARGETS
-        INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}
-    )
-
-    write_basic_package_version_file("${CMAKE_CURRENT_BINARY_DIR}/glslang-config-version.cmake"
-        VERSION ${GLSLANG_VERSION}
-        COMPATIBILITY SameMajorVersion
-    )
-
-    install(
-        EXPORT      glslang-targets
-        NAMESPACE   "glslang::"
-        DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}"
-    )
-
-    install(
-        FILES
-            "${CMAKE_CURRENT_BINARY_DIR}/glslang-config.cmake"
-            "${CMAKE_CURRENT_BINARY_DIR}/glslang-config-version.cmake"
-        DESTINATION
-            "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}"
-    )
-endif()
