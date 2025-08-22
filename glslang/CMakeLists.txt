@@ -146,9 +146,6 @@ endif()
 ################################################################################
 # glslang
 ################################################################################
-set(GLSLANG_SOURCES
-    CInterface/glslang_c_interface.cpp)
-
 set(GLSLANG_HEADERS
     Public/ShaderLang.h
     Include/arrays.h
@@ -236,9 +233,7 @@ if(WIN32)
     source_group("GenericCodeGen" REGULAR_EXPRESSION "GenericCodeGen/*")
     source_group("MachineIndependent\\Preprocessor" REGULAR_EXPRESSION "MachineIndependent/preprocessor/*")
     source_group("HLSL" REGULAR_EXPRESSION "HLSL/*")
-    source_group("CInterface" REGULAR_EXPRESSION "CInterface/*")
     source_group("SPIRV" REGULAR_EXPRESSION "SPIRV/[^/]*")
-    source_group("SPIRV\\CInterface" REGULAR_EXPRESSION "SPIRV/CInterface/*")
 endif()
 
 ################################################################################
