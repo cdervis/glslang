@@ -110,13 +110,8 @@ if(WIN32 AND BUILD_SHARED_LIBS)
     endif()
 endif()
 
-if(ENABLE_OPT)
-    target_link_libraries(SPIRV INTERFACE glslang PUBLIC SPIRV-Tools-opt)
-    target_include_directories(SPIRV PUBLIC
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../External>)
-else()
-    target_link_libraries(SPIRV INTERFACE glslang)
-endif()
+target_link_libraries(SPIRV INTERFACE glslang PUBLIC SPIRV-Tools-opt)
+target_include_directories(SPIRV PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../External>)
 
 if(WIN32)
     source_group("Source" FILES ${SOURCES} ${HEADERS})

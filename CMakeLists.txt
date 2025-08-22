@@ -60,7 +60,6 @@ option(ENABLE_GLSLANG_BINARIES "Builds glslang and spirv-remap" ON)
 
 option(ENABLE_RTTI "Enables RTTI")
 option(ENABLE_EXCEPTIONS "Enables Exceptions")
-cmake_dependent_option(ENABLE_OPT "Enables spirv-opt capability if present" ON "ENABLE_SPIRV" OFF)
 
 if(MINGW OR (APPLE AND ${CMAKE_CXX_COMPILER_ID} MATCHES "GNU"))
     # Workaround for CMake behavior on Mac OS with gcc, cmake generates -Xarch_* arguments
@@ -204,15 +203,11 @@ function(glslang_pch target pch)
     endif()
 endfunction()
 
-if(ENABLE_OPT)
-    message(STATUS "optimizer enabled")
-    add_compile_definitions(ENABLE_OPT=1)
-else()
-    add_compile_definitions(ENABLE_OPT=0)
-endif()
+add_compile_definitions(ENABLE_OPT=1)
 
 if(ENABLE_SPIRV)
     add_subdirectory(SPIRV)
 endif()
+
 add_subdirectory(glslang)
 
