@@ -91,7 +91,7 @@ set_target_properties(SPIRV PROPERTIES
     SOVERSION "${GLSLANG_VERSION_MAJOR}")
 target_include_directories(SPIRV PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..>
-    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
+)
 
 if (ENABLE_SPVREMAPPER)
     add_library(SPVRemapper ${LIB_TYPE} ${SPVREMAP_SOURCES} ${SPVREMAP_HEADERS})
@@ -118,12 +118,3 @@ if(WIN32)
     source_group("Source" FILES ${SPVREMAP_SOURCES} ${SPVREMAP_HEADERS})
 endif()
 
-if(GLSLANG_ENABLE_INSTALL)
-    if (ENABLE_SPVREMAPPER)
-        install(TARGETS SPVRemapper EXPORT glslang-targets)
-    endif()
-
-    install(TARGETS SPIRV EXPORT glslang-targets)
-
-    install(FILES ${PUBLIC_HEADERS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/glslang/SPIRV/)
-endif()
