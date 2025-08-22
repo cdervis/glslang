@@ -203,8 +203,6 @@ function(glslang_pch target pch)
     endif()
 endfunction()
 
-add_compile_definitions(ENABLE_OPT=1)
-
 if(ENABLE_SPIRV)
     add_subdirectory(SPIRV)
 endif()
