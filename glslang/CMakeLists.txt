@@ -183,12 +183,6 @@ if(WIN32 AND BUILD_SHARED_LIBS)
     set_target_properties(glslang PROPERTIES PREFIX "")
 endif()
 
-if(ENABLE_SPIRV)
-    target_include_directories(glslang PUBLIC
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../External>)
-    target_link_libraries(glslang SPIRV-Tools-opt)
-endif()
-
 # Link pthread
 if(UNIX OR "${CMAKE_SYSTEM_NAME}" STREQUAL "Fuchsia" OR ANDROID)
     set(THREADS_PREFER_PTHREAD_FLAG ON)
